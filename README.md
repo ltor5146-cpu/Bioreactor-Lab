@@ -10,8 +10,8 @@ A professional bioreactor simulation application for biochemical research and ed
 
 ## Files
 - `bioreactor_full_app (2).jsx`: Core application logic.
-- `logo1.jpg`, `logo2.jpg`, `logo3.jpg`: Branding assets.
-- `WhatsApp Image...`: Supporting documentation images.
+- `logo1.jpg` to `logo3.jpg`: Primary branding assets.
+- `logo4.jpeg` to `logo6.jpeg`: Additional supporting images.
 
 ## Setup
 This project is built with React and JSX. Ensure you have the necessary dependencies installed.
