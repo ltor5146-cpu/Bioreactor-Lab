@@ -1,0 +1,5 @@
+cd /home/ubuntu/.gemini/antigravity/scratch/bioreactor_simulation
+
+
+npm run dev -- --port 5176 --host
+
