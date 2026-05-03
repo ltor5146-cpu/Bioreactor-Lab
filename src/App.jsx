@@ -9,6 +9,8 @@ import { getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, addDoc, collecti
 // Each valid PIN allows up to 10 uses, tracked in `usageCount`
 // Every attempt (new_session or reset) is logged in `pinAttempts` collection
 const MAX_PIN_USES = 10;
+// ⚠️ TESTING ONLY — Remove before production: gives test PIN 1000 attempts instead of 10
+const getMaxPinUses = (pin) => pin === TEST_PIN ? 1000 : MAX_PIN_USES;
 
 // ⚠️ TESTING ONLY — Remove before production
 // This test PIN auto-seeds into Firestore on app load.
@@ -200,7 +202,7 @@ function LandingForm({ onAccessGranted }) {
       const currentUsage = pinData.usageCount || 0;
 
       // Check if PIN has exceeded max uses
-      if (currentUsage >= MAX_PIN_USES) {
+      if (currentUsage >= getMaxPinUses(enteredPin)) {
         setErrors({ pin: "You have reached your maximum number of attempts. Please contact your instructor." });
         setStatus("idle");
         return;
@@ -214,7 +216,7 @@ function LandingForm({ onAccessGranted }) {
         usageCount: increment(1),
         lastUsedBy: form.studentId.trim(),
         lastUsedAt: attemptTimestamp,
-        status: newUsageCount >= MAX_PIN_USES ? "exhausted" : "active",
+        status: newUsageCount >= getMaxPinUses(enteredPin) ? "exhausted" : "active",
       });
 
       // Log this attempt to `pinAttempts` collection
@@ -2593,7 +2595,7 @@ function BioreactorSimulator({ studentName, sessionKey, pin, studentId, location
         const pinData = pinDoc.data();
         const currentUsage = pinData.usageCount || 0;
 
-        if (currentUsage >= MAX_PIN_USES) {
+        if (currentUsage >= getMaxPinUses(pin)) {
           setBlocked(true);
           return;
         }
@@ -2606,7 +2608,7 @@ function BioreactorSimulator({ studentName, sessionKey, pin, studentId, location
           usageCount: increment(1),
           lastUsedBy: studentId,
           lastUsedAt: attemptTimestamp,
-          status: newUsageCount >= MAX_PIN_USES ? "exhausted" : "active",
+          status: newUsageCount >= getMaxPinUses(pin) ? "exhausted" : "active",
         });
 
         // Fetch fresh location data for reset attempt
