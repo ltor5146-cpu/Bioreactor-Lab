@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════════════════════════════════════════
-const VALID_PIN = "BIO2025";
+// PIN validation is now handled via Firestore `validPins` collection
+// Each valid PIN is stored as a document with status: "unused" | "used"
 
 // Firebase configuration
 const firebaseConfig = {
@@ -108,7 +109,6 @@ function LandingForm({ onAccessGranted }) {
     if (!form.courseName.trim()) e.courseName = "Course name is required";
     if (!form.courseCode.trim()) e.courseCode = "Course code is required";
     if (!form.pin.trim()) e.pin = "PIN code is required";
-    else if (form.pin.trim().toUpperCase() !== VALID_PIN.toUpperCase()) e.pin = "Invalid PIN — check with your instructor";
     return e;
   };
 
@@ -117,6 +117,38 @@ function LandingForm({ onAccessGranted }) {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     if (status === "loading" || status === "success") return;
     setStatus("loading"); setServerError("");
+
+    // ── Validate PIN against Firestore `validPins` collection ──
+    const enteredPin = form.pin.trim();
+    try {
+      const pinDocRef = doc(db, "validPins", enteredPin);
+      const pinDoc = await getDoc(pinDocRef);
+
+      if (!pinDoc.exists()) {
+        setErrors({ pin: "Invalid PIN — check with your instructor" });
+        setStatus("idle");
+        return;
+      }
+
+      const pinData = pinDoc.data();
+      if (pinData.status === "used") {
+        setErrors({ pin: "This PIN has already been used" });
+        setStatus("idle");
+        return;
+      }
+
+      // Mark PIN as used
+      await updateDoc(pinDocRef, {
+        status: "used",
+        usedBy: form.studentId.trim(),
+        usedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("PIN validation error:", err);
+      setServerError("Unable to validate PIN. Please try again.");
+      setStatus("idle");
+      return;
+    }
 
     const entryTime = new Date().toISOString();
     const sessionKey = `${form.studentId.trim()}-${Date.now()}`;
@@ -130,7 +162,7 @@ function LandingForm({ onAccessGranted }) {
       "Faculty": form.faculty.trim(),
       "Course Name": form.courseName.trim(),
       "Course Code": form.courseCode.trim(),
-      "PIN": form.pin.trim(),
+      "PIN": enteredPin,
       "Last Entry Time": entryTime,
       "Exit Time": "",
       "Current Session Duration (min)": "0.00",
