@@ -10,6 +10,11 @@ import { getFirestore, doc, setDoc, getDoc, updateDoc, addDoc, collection, incre
 // Every attempt (new_session or reset) is logged in `pinAttempts` collection
 const MAX_PIN_USES = 10;
 
+// ⚠️ TESTING ONLY — Remove before production
+// This test PIN auto-seeds into Firestore on app load.
+// To reset the counter: go to Firebase Console → Firestore → validPins → "TEST@1234!" → set usageCount to 0
+const TEST_PIN = "TEST@1234!";
+
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBGNHG4rxvrCPbikT-nVHipsniP8g3tfV8",
@@ -23,6 +28,26 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+
+// ⚠️ TESTING ONLY — Auto-seed the test PIN into Firestore if it doesn't exist
+(async () => {
+  try {
+    const testPinRef = doc(db, "validPins", TEST_PIN);
+    const testPinDoc = await getDoc(testPinRef);
+    if (!testPinDoc.exists()) {
+      await setDoc(testPinRef, {
+        pin: TEST_PIN,
+        status: "unused",
+        usageCount: 0,
+        createdAt: new Date().toISOString(),
+        isTestPin: true,
+        usedBy: null,
+        usedAt: null,
+      });
+      console.log("✅ Test PIN seeded into Firestore:", TEST_PIN);
+    }
+  } catch (e) { /* silent fail on seed */ }
+})();
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  FIELD COMPONENT
