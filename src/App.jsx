@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, addDoc, collection, increment, arrayUnion } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, addDoc, collection, query, where, increment, arrayUnion } from "firebase/firestore";
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  CONFIG
@@ -236,27 +236,73 @@ function LandingForm({ onAccessGranted }) {
     }
 
     const entryTime = new Date().toISOString();
-    const sessionKey = `${form.studentId.trim()}-${Date.now()}`;
+    const studentId = form.studentId.trim();
+
+    // ── Consolidate: find existing session doc by PIN or Student ID ──
+    let existingDocId = null;
+
+    // Priority 1: Check if a session doc exists for this PIN
+    const pinSessionRef = doc(db, "sessions", `pin_${enteredPin}`);
+    try {
+      const pinSessionDoc = await getDoc(pinSessionRef);
+      if (pinSessionDoc.exists()) {
+        existingDocId = `pin_${enteredPin}`;
+      }
+    } catch { /* continue to next check */ }
+
+    // Priority 2: If no PIN match, check by Student ID
+    if (!existingDocId) {
+      try {
+        const studentQuery = query(
+          collection(db, "sessions"),
+          where("Student ID", "==", studentId)
+        );
+        const studentSnap = await getDocs(studentQuery);
+        if (!studentSnap.empty) {
+          existingDocId = studentSnap.docs[0].id;
+        }
+      } catch { /* continue to create new */ }
+    }
+
+    const sessionKey = existingDocId || `pin_${enteredPin}`;
     sessionKeyRef.current = sessionKey;
 
-    // Send to Firebase
-    setDoc(doc(db, "sessions", sessionKey), {
-      "Full Name": form.fullName.trim(),
-      "Student ID": form.studentId.trim(),
-      "University": form.university.trim(),
-      "Faculty": form.faculty.trim(),
-      "Course Name": form.courseName.trim(),
-      "Course Code": form.courseCode.trim(),
-      "PIN": enteredPin,
-      "Last Entry Time": entryTime,
-      "Exit Time": "",
-      "Current Session Duration (min)": "0.00",
-      "IP Address": locationData.ip,
-      "Location": { ...locationData },
-      "Session Key": sessionKey,
-      "Latest Trial": null,
-      "Trials History": []
-    }).catch(() => { });
+    if (existingDocId) {
+      // ── UPDATE existing document ──
+      updateDoc(doc(db, "sessions", existingDocId), {
+        "Last Entry Time": entryTime,
+        "Exit Time": "",
+        "Current Session Duration (min)": "0.00",
+        "IP Address": locationData.ip,
+        "Location": { ...locationData },
+        "Session Key": sessionKey,
+        // Update student info in case it changed
+        "Full Name": form.fullName.trim(),
+        "University": form.university.trim(),
+        "Faculty": form.faculty.trim(),
+        "Course Name": form.courseName.trim(),
+        "Course Code": form.courseCode.trim(),
+      }).catch(() => { });
+    } else {
+      // ── CREATE new document (first time for this PIN) ──
+      setDoc(doc(db, "sessions", sessionKey), {
+        "Full Name": form.fullName.trim(),
+        "Student ID": studentId,
+        "University": form.university.trim(),
+        "Faculty": form.faculty.trim(),
+        "Course Name": form.courseName.trim(),
+        "Course Code": form.courseCode.trim(),
+        "PIN": enteredPin,
+        "Last Entry Time": entryTime,
+        "Exit Time": "",
+        "Current Session Duration (min)": "0.00",
+        "IP Address": locationData.ip,
+        "Location": { ...locationData },
+        "Session Key": sessionKey,
+        "Latest Trial": null,
+        "Trials History": []
+      }).catch(() => { });
+    }
 
     setStatus("success");
     setSubmitted(true);
