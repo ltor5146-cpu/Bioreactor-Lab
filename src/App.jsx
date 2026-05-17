@@ -2557,20 +2557,6 @@ function BioreactorSim({ sessionKey, onReset, trialType = "new_session", entryTi
             </div>
           </div>
 
-          {/* Species ref */}
-          <div style={{ background: "#fafbfc", borderRadius: "4px", padding: "5px 8px", border: `1px solid ${bacterium.color}55` }}>
-            <div style={{ fontSize: "8px", color: "#4a5a6a", letterSpacing: "0.10em", marginBottom: "3px", fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: "600" }}>SPECIES DATA</div>
-            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "2px 8px", fontSize: "9px", alignItems: "center" }}>
-              <span style={{ color: "#788898", letterSpacing: "0.03em", fontFamily: "'Inter','Segoe UI',sans-serif" }}>Temp</span>
-              <span style={{ color: "#ff5555", fontFamily: "'Inter','Segoe UI','Helvetica Neue',sans-serif" }}>{bacterium.temp.min}–{bacterium.temp.max}°C</span>
-              <span style={{ color: "#788898", letterSpacing: "0.03em", fontFamily: "'Inter','Segoe UI',sans-serif" }}>pH</span>
-              <span style={{ color: "#9060e8", fontFamily: "'Inter','Segoe UI','Helvetica Neue',sans-serif" }}>{bacterium.ph.min}–{bacterium.ph.max}</span>
-              <span style={{ color: "#788898", letterSpacing: "0.03em", fontFamily: "'Inter','Segoe UI',sans-serif" }}>O₂</span>
-              <span style={{ color: "#2890e0", fontFamily: "'Inter','Segoe UI','Helvetica Neue',sans-serif" }}>{bacterium.oxygen}</span>
-              <span style={{ color: "#788898", letterSpacing: "0.03em", fontFamily: "'Inter','Segoe UI',sans-serif" }}>Pref</span>
-              <span style={{ color: bacterium.color, fontFamily: "'Inter','Segoe UI','Helvetica Neue',sans-serif" }}>{bacterium.preferredNutrients.map(id => NUTRIENTS[id].symbol).join(" + ")}</span>
-            </div>
-          </div>
 
           {/* AI Telemetry */}
           <div style={{ background: "#fafbfc", borderRadius: "4px", padding: "5px 8px", border: `1px solid ${bacterium.color}55`, flex: "0 0 auto" }}>
